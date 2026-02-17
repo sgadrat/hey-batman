@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Reocrding
+# Recording
 import pyaudio
 import wave
 import math
