@@ -1,0 +1,4 @@
+openai-whisper
+
+# Note you need to install portaudio19-dev for that to be isntallable
+pyaudio
