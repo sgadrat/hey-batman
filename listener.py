@@ -8,10 +8,19 @@ logger = logging.getLogger(__name__)
 class Listener:
 	"""
 	Read the mic and send non-silent sequences to a fifo.
+
+	Glossary:
+	  - sequence: a waveform of arbitrary length sent to the fifo (expectedly containing a sentence)
+	  - segment: a waveform of fixed duration that represent the smallest unit of processing
+	  - chunk: binary data of a segment
+
+	  A sequence is made of multiple segments merged together.
 	"""
 	def __init__(self, output_queue):
 		self.output_queue = output_queue
 		self.silence_threshold = 400
+		self.segment_duration = 0.25
+		self.nb_silence_to_flush = 2
 
 		self.sequence = []
 		self.nb_silence = 0
@@ -34,7 +43,7 @@ class Listener:
 			else:
 				logger.debug("ignoring silence")
 
-			if self.nb_silence >= 2:
+			if self.nb_silence >= self.nb_silence_to_flush:
 				logger.debug("flush sequence")
 				self.output_queue.push(self.sequence)
 				self.sequence = []
@@ -49,8 +58,7 @@ class Listener:
 		FORMAT = pyaudio.paInt16
 		CHANNELS = 1
 		RATE = 16000
-		SEGMENT_SECONDS = 1
-		CHUNK = int(RATE * SEGMENT_SECONDS)
+		CHUNK = int(RATE * self.segment_duration)
 
 		# Init audio capture object
 		audio = pyaudio.PyAudio()

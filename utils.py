@@ -1,4 +1,4 @@
-import time
+import threading
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,27 +11,28 @@ class Fifo:
 		self.queue_size = queue_size
 		self.name = "queue"
 		self.queue = []
+		self.condition = threading.Condition()
 
 	def push(self, item):
-		self._debug("pushed item")
-		#TODO lock
-		if len(self.queue) >= self.queue_size:
-			self._warning(f"queue {self.name}: queue full, lost item")
-			return
+		self._debug("pushing item")
 
-		self.queue.append(item)
-		#TODO condition notify
+		with self.condition:
+			if len(self.queue) >= self.queue_size:
+				self._warning(f"queue {self.name}: queue full, lost item")
+				return
+
+			self.queue.append(item)
+			self.condition.notify_all()
 
 	def pop(self):
-		#TODO lock
-		#TODO condition wait
-		while len(self.queue) == 0:
-			self._debug("pop wait")
-			time.sleep(0.5)
+		self._debug("poping item")
+		with self.condition:
+			while len(self.queue) == 0:
+				self.condition.wait()
 
-		self._debug("POP!")
-		item = self.queue[0]
-		self.queue = self.queue[1:]
+			self._debug("POP!")
+			item = self.queue[0]
+			self.queue = self.queue[1:]
 		return item
 
 	def _debug(self, m):

@@ -9,8 +9,8 @@ class Transcripter:
 	"""
 	Get waveforms from a fifo, transcript them and create command threads to process commands in background
 	"""
-	def __init__(self, segments_queue):
-		self.segments_queue = segments_queue
+	def __init__(self, sequences_queue):
+		self.sequences_queue = sequences_queue
 
 		logger.info("Loading transcription model...")
 		self.model = whisper.load_model("turbo")
@@ -18,9 +18,9 @@ class Transcripter:
 	def run(self):
 		while True:
 			try:
-				segment = self.segments_queue.pop()
+				sequence = self.sequences_queue.pop()
 
-				data_s16 = numpy.array(segment, dtype=numpy.int16)
+				data_s16 = numpy.array(sequence, dtype=numpy.int16)
 				float_data = data_s16.astype(numpy.float32, order='C') / 32768.0
 				result = self.model.transcribe(float_data)
 
