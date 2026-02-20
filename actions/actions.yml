@@ -1,0 +1,5 @@
+- name: commande
+  action: action_commande.sh
+  starters:
+    - commande
+    - execute commande

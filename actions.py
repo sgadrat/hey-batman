@@ -1,0 +1,118 @@
+import logging
+import re
+import subprocess
+import threading
+
+logger = logging.getLogger(__name__)
+
+class ActionLauncher:
+	def __init__(self, starters, sentences_queue):
+		self.starters = [self.normalize(starter) for starter in starters]
+		self.sentences_queue = sentences_queue
+		self.actions = []
+
+	def run(self):
+		logger.info("running")
+		while True:
+			try:
+				sentence = self.sentences_queue.pop()
+				self.process_sentence(sentence)
+			except Exception as e:
+				logger.error(e)
+
+	def load_actions(self, actions_path):
+		#TODO
+		self.actions = [
+			{
+				"name": "commande",
+				"script": "/home/sylvain/workspace/ai/ai_listen/actions/action_commande.sh",
+				"starters": ["commande", "execute commande", "command", "ouvre", "execute"],
+				"parameters-format": "lowcase-word",
+			}
+		]
+
+	def normalize(self, text):
+		#TODO remove accents and diacritics
+		return text.lower()
+
+	def process_sentence(self, sentence):
+		"""
+		Extract an action from a sentence and execute it.
+
+		A sentence is a series of words pronounced in one go by the user, we interprete is as begin formed like that:
+		  - "<garbage> <starter> <command> <parameters>"
+
+		garbage: possible noises we do not care about
+		starter: a starter expression (like the famous "ok google")
+		command: a series of words indicating the action to take
+		parameters: the rest of the sentence
+
+		Example:
+			"[music playing] hey robot! open      firefox"
+			"<garbage      > <starter>  <command> <parameters>"
+		"""
+		logger.info(f"Processing sentence: `{sentence}`")
+		def next_word(text, pos):
+			while pos < len(text) and not text[pos].isalpha():
+				pos += 1
+
+			if pos >= len(text):
+				return ""
+
+			return text[pos:]
+
+		# Find starter
+		starter_pos = None
+		starter_used = None
+		for starter in self.starters:
+			starter_pos = self.normalize(sentence).find(starter)
+			if starter_pos >= 0:
+				starter_used = starter
+				break
+
+		if starter_used is None:
+			return
+		logger.info(f"starter `{starter_used}` found at position `{starter_pos}`")
+
+		# Find real begining of the command
+		command = next_word(sentence, starter_pos + len(starter_used))
+		if command == "":
+			return
+		logger.info(f"command = `{command}`")
+
+		# Check if command matches an action
+		selected_action = None
+		params = None
+		normalized_command = self.normalize(command)
+		for action in self.actions:
+			if selected_action is not None:
+				break
+
+			for starter in action["starters"]:
+				logger.info(f"checking starter `{starter}`")
+				if normalized_command.startswith(starter):
+					params = next_word(command, len(starter))
+					selected_action = action
+					break
+
+		logger.info(f"Parsed action {selected_action} - {params=}")
+		if selected_action is None:
+			return
+
+		# Postprocess parameters
+		if action["parameters-format"] == "identity":
+			pass
+		elif action["parameters-format"] == "lowcase-word":
+			m = re.match("^([a-zA-Z]+).*$", params)
+			if m is None:
+				return
+			params = m.group(1).lower()
+
+		logger.info(f"postprocessed params `{params}`")
+
+		# Launch command
+		logger.info(f"Launcing action {selected_action} - {params=}")
+		threading.Thread(target=_run_action, args=(selected_action, params), daemon=True).start()
+
+def _run_action(action, params):
+	subprocess.run([action["script"], params])
