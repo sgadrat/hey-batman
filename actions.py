@@ -1,7 +1,9 @@
 import logging
+import pathlib
 import re
 import subprocess
 import threading
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +14,7 @@ class ActionLauncher:
 		self.actions = []
 
 	def run(self):
-		logger.info("running")
+		logger.debug("running")
 		while True:
 			try:
 				sentence = self.sentences_queue.pop()
@@ -21,15 +23,16 @@ class ActionLauncher:
 				logger.error(e)
 
 	def load_actions(self, actions_path):
-		#TODO
-		self.actions = [
-			{
-				"name": "commande",
-				"script": "/home/sylvain/workspace/ai/ai_listen/actions/action_commande.sh",
-				"starters": ["commande", "execute commande", "command", "ouvre", "execute"],
-				"parameters-format": "lowcase-word",
-			}
-		]
+		# Load actions definitions
+		with open(actions_path, "r") as actions_file:
+			self.actions = yaml.load(actions_file, Loader=yaml.CLoader)
+
+		# Resolve relative paths
+		basedir = pathlib.Path(actions_path).parent
+		for action in self.actions:
+			action["script"] = pathlib.Path(action["script"])
+			if not action["script"].is_absolute():
+				action["script"] = (basedir / action["script"]).absolute()
 
 	def normalize(self, text):
 		#TODO remove accents and diacritics
@@ -51,7 +54,7 @@ class ActionLauncher:
 			"[music playing] hey robot! open      firefox"
 			"<garbage      > <starter>  <command> <parameters>"
 		"""
-		logger.info(f"Processing sentence: `{sentence}`")
+		logger.debug(f"Processing sentence: `{sentence}`")
 		def next_word(text, pos):
 			while pos < len(text) and not text[pos].isalpha():
 				pos += 1
@@ -72,13 +75,13 @@ class ActionLauncher:
 
 		if starter_used is None:
 			return
-		logger.info(f"starter `{starter_used}` found at position `{starter_pos}`")
+		logger.debug(f"starter `{starter_used}` found at position `{starter_pos}`")
 
 		# Find real begining of the command
 		command = next_word(sentence, starter_pos + len(starter_used))
 		if command == "":
 			return
-		logger.info(f"command = `{command}`")
+		logger.debug(f"command = `{command}`")
 
 		# Check if command matches an action
 		selected_action = None
@@ -89,13 +92,13 @@ class ActionLauncher:
 				break
 
 			for starter in action["starters"]:
-				logger.info(f"checking starter `{starter}`")
+				logger.debug(f"checking starter `{starter}`")
 				if normalized_command.startswith(starter):
 					params = next_word(command, len(starter))
 					selected_action = action
 					break
 
-		logger.info(f"Parsed action {selected_action} - {params=}")
+		logger.debug(f"Parsed action {selected_action} - {params=}")
 		if selected_action is None:
 			return
 
@@ -108,10 +111,10 @@ class ActionLauncher:
 				return
 			params = m.group(1).lower()
 
-		logger.info(f"postprocessed params `{params}`")
+		logger.debug(f"postprocessed params `{params}`")
 
 		# Launch command
-		logger.info(f"Launcing action {selected_action} - {params=}")
+		logger.info(f"Launcing action {selected_action['name']} - {params=}")
 		threading.Thread(target=_run_action, args=(selected_action, params), daemon=True).start()
 
 def _run_action(action, params):

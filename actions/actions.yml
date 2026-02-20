@@ -1,5 +1,10 @@
 - name: commande
-  action: action_commande.sh
+  script: action_commande.sh
+  parameters-format: lowcase-word
   starters:
-    - commande
-    - execute commande
+    - "commande"
+    - "execute commande"
+    - "command"
+    - "ouvre"
+    - "execute"
+    - "lance"
