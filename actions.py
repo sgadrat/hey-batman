@@ -94,22 +94,22 @@ class ActionLauncher:
 		logger.debug(f"command = `{command}`")
 
 		# Check if command matches an action
-		selected_action = None
+		action = None
 		params = None
 		normalized_command = self.normalize(command)
-		for action in self.actions:
-			if selected_action is not None:
+		for current_action in self.actions:
+			if action is not None:
 				break
 
-			for starter in action["starters"]:
+			for starter in current_action["starters"]:
 				logger.debug(f"checking starter `{starter}`")
 				if normalized_command.startswith(starter):
 					params = next_word(command, len(starter))
-					selected_action = action
+					action = current_action
 					break
 
-		logger.debug(f"Parsed action {selected_action} - {params=}")
-		if selected_action is None:
+		logger.debug(f"Parsed action {action} - {params=}")
+		if action is None:
 			return
 
 		# Postprocess parameters
@@ -126,8 +126,8 @@ class ActionLauncher:
 		logger.debug(f"postprocessed params `{params}`")
 
 		# Launch command
-		logger.info(f"Launcing action {selected_action['name']} - {params=}")
-		threading.Thread(target=_run_action, args=(selected_action, params), daemon=True).start()
+		logger.info(f"Launcing action {action['name']} - {params=}")
+		threading.Thread(target=_run_action, args=(action, params), daemon=True).start()
 
 def _run_action(action, params):
 	subprocess.run([action["script"], params])
