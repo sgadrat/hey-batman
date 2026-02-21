@@ -110,6 +110,8 @@ class ActionLauncher:
 			if m is None:
 				return
 			params = m.group(1).lower()
+		else:
+			assert False, f"unknown parameters format: `{action['parameters-format']}`"
 
 		logger.debug(f"postprocessed params `{params}`")
 

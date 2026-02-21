@@ -8,3 +8,15 @@
     - "ouvre"
     - "execute"
     - "lance"
+- name: shutdown
+  script: action_shutdown.sh
+  parameters-format: identity
+  starters:
+    - shutdown
+    - eteins-toi
+    - eteins toi
+    - etends-toi
+    - etends toi
+    - est en toi
+    - fais dodo
+    - fait dodo
