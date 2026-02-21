@@ -3,6 +3,7 @@ import pathlib
 import re
 import subprocess
 import threading
+import unicodedata
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -35,8 +36,17 @@ class ActionLauncher:
 				action["script"] = (basedir / action["script"]).absolute()
 
 	def normalize(self, text):
-		#TODO remove accents and diacritics
-		return text.lower()
+		"""
+		Normalize a string by removing accents, diacritics and lower-casing it.
+
+		Note: produced string has the same length than the original, characters can
+		      be altered but are at the same position as in the original string.
+		"""
+		normalized = unicodedata.normalize('NFKD', text)
+		normalized = u"".join([c for c in normalized if not unicodedata.combining(c)])
+		normalized = normalized.lower()
+		logger.debug(f"normalize({text}) -> `{normalized}`")
+		return normalized
 
 	def process_sentence(self, sentence):
 		"""
