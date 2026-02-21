@@ -1,5 +1,16 @@
+# Expression to trigger interpretation
 starters:
   - hey batman
   - et batman
   - eh batman
+
+# Actions that can be taken
 actions: actions/actions.yml
+
+# Configuration of the module listening the mic to extract non-silent sequences
+#  This module listens the mic by fixed duration segments,
+#  and assembles continuous non-silent segments into a sequence of iterest.
+listener:
+  silence_threshold: 400 # Volume under which a segment is considered silent
+  segment_duration: 0.25 # Duration of a segment, in seconds
+  nb_silence_to_flush: 2 # Number of consecutive silent segments to end a sequence

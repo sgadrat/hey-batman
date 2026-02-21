@@ -33,7 +33,12 @@ def main():
 	my_action_launcher = actions.ActionLauncher(config["starters"], sentences_queue)
 	my_action_launcher.load_actions(pathlib.Path(__file__).parent / "actions" / "actions.yml")
 	my_transcript = transcripter.Transcripter(waveforms_queue, sentences_queue)
-	my_listener = listener.Listener(waveforms_queue)
+	my_listener = listener.Listener(
+		waveforms_queue,
+		config.get("listener", {}).get("silence_threshold", 400),
+		config.get("listener", {}).get("segment_duration", 0.25),
+		config.get("listener", {}).get("nb_silence_to_flush", 2),
+	)
 
 	# Start components
 	action_launcher_thread = threading.Thread(target=my_action_launcher.run, daemon=True).start()

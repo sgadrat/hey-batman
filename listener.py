@@ -16,11 +16,11 @@ class Listener:
 
 	  A sequence is made of multiple segments merged together.
 	"""
-	def __init__(self, output_queue):
+	def __init__(self, output_queue, silence_threshold, segment_duration, nb_silence_to_flush):
 		self.output_queue = output_queue
-		self.silence_threshold = 400
-		self.segment_duration = 0.25
-		self.nb_silence_to_flush = 2
+		self.silence_threshold = silence_threshold
+		self.segment_duration = segment_duration
+		self.nb_silence_to_flush = nb_silence_to_flush
 
 		self.sequence = []
 		self.nb_silence = 0
