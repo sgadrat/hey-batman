@@ -3,3 +3,6 @@ pyyaml
 
 # Note you need to install portaudio19-dev for that to be isntallable
 pyaudio
+
+# Used only by babelfish
+qwen-tts
